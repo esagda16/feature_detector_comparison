@@ -1,0 +1,4 @@
+﻿  Source.cpp
+C:\Users\egils\Desktop\OpenCV_projects\SIFT\SIFT\Source.cpp(77,17): warning C4244: 'initializing': conversion from 'unsigned __int64' to 'double', possible loss of data
+C:\Users\egils\Desktop\OpenCV_projects\SIFT\SIFT\Source.cpp(78,21): warning C4244: 'initializing': conversion from 'unsigned __int64' to 'double', possible loss of data
+  SIFT.vcxproj -> C:\Users\egils\Desktop\OpenCV_projects\SIFT\x64\Debug\SIFT.exe
