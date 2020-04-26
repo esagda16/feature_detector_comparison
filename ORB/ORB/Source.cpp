@@ -57,36 +57,38 @@ for (size_t i = 0; i < knn_matches.size(); i++)
 		good_matches.push_back(knn_matches[i][0]);
 	}
 }
-//-- Draw matches
-Mat img_matches;
-drawMatches(img1, ORBkeypoints1, img2, ORBkeypoints2, good_matches, img_matches, Scalar::all(-1),
-	Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-//-- Show detected matches
-namedWindow("Good Matches", WINDOW_NORMAL);
-imshow("Good Matches", img_matches);
 
-//-- Draw matches
-Mat  img_ORBmatches;
+std::vector<Point2f> points1, points2;
 
-//ORB
-drawMatches(img1, ORBkeypoints1, img2, ORBkeypoints2, ORBmatches, img_ORBmatches, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+for (size_t i = 0; i < good_matches.size(); i++)
+{
+	points1.push_back(SIFTkeypoints1[good_matches[i].queryIdx].pt);
+	points2.push_back(SIFTkeypoints2[good_matches[i].trainIdx].pt);
+}
 
-double matches = ORBmatches.size();
-double goodmatches = good_matches.size();
-double percentmatches = goodmatches / matches * 100;
+// Calculating homography used for aligning the images:
+cv::Mat ransac_mat;
+std::cout << "Computing homography..." << std::endl;
 
-namedWindow("ORB", WINDOW_NORMAL);
-imshow("ORB", img_ORBmatches);
+cv::Mat homography = cv::findHomography(points1, points2, ransac_mat, cv::RANSAC, 3.0);
 
-cout << "ORB features found in image1:" << ORBkeypoints1.size() << "\n";
-cout << "ORB features found in image2:" << ORBkeypoints2.size() << "\n";
-cout << "ORB features matched:" << ORBmatches.size() << "\n";
-cout << "ORB good features matched:" << good_matches.size() << "\n";
-cout << "ORB percent good features matched:" << percentmatches << "%" << "\n";
-time(&end);
-double time_taken = (end - start);
-cout << "ORB execution time:" << time_taken <<setprecision(5)<< "\n";
-cout << "\n";
+std::cout << "RANSAC information: " << ransac_mat << std::endl;
+
+float inlier = 0, outlier = 0;
+for (int i = 0; i < ransac_mat.rows; i++) {
+
+	// We have an inlier:
+	if ((int)ransac_mat.at<uchar>(i, 0) == 1) inlier = inlier + 1;
+
+	// We have an outlier:
+	else outlier = outlier + 1;
+}
+
+std::cout << "Total matches checked: " << ransac_mat.rows << std::endl;
+std::cout << "Inliers: " << inlier << std::endl;
+std::cout << "Outliers: " << outlier << std::endl;
+std::cout << "Procent inliers: " << (inlier / (ransac_mat.rows * 1.0)) * 100 << std::endl;
+std::cout << "Procent outliers: " << (outlier / (ransac_mat.rows * 1.0)) * 100 << std::endl;	
 
 waitKey();
 
