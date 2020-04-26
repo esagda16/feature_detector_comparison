@@ -55,32 +55,39 @@ int main()
 			good_matches.push_back(knn_matches[i][0]);
 		}
 	}
-	//-- Draw matches
-	Mat img_matches;
-	drawMatches(img1, SIFTkeypoints1, img2, SIFTkeypoints2, good_matches, img_matches, Scalar::all(-1),
-		Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-	//-- Show detected matches
-	namedWindow("Good Matches", WINDOW_NORMAL);
-	imshow("Good Matches", img_matches);
+	
+	std::vector<Point2f> points1, points2;
 
-	//-- Draw matches
-	Mat  img_SIFTmatches;
-	drawMatches(img1, SIFTkeypoints1, img2, SIFTkeypoints2, SIFTmatches, img_SIFTmatches, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+	for (size_t i = 0; i < good_matches.size(); i++)
+	{
+		points1.push_back(SIFTkeypoints1[good_matches[i].queryIdx].pt);
+		points2.push_back(SIFTkeypoints2[good_matches[i].trainIdx].pt);
+	}
 
-	namedWindow("SIFT", WINDOW_NORMAL);
-	imshow("SIFT", img_SIFTmatches);
-	double matches = SIFTmatches.size();
-	double goodmatches = good_matches.size();
-	double percentmatches = goodmatches / matches * 100;
-	cout << "SIFT features found in image1:" << SIFTkeypoints1.size() << "\n";
-	cout << "SIFT features found in image2:" << SIFTkeypoints2.size() << "\n";
-	cout << "SIFT features matched:" << SIFTmatches.size() << "\n";
-	cout << "SIFT good features matched:" << good_matches.size() << "\n";
-	cout << "SIFT percent good features matched:" << percentmatches << "%" << "\n";
-	time(&end);
-	double time_taken = double(end - start);
-	cout << "SIFT execution time:" << time_taken << "sec" << "\n";
-	cout << "\n";
+	// Calculating homography used for aligning the images:
+	cv::Mat ransac_mat;
+	std::cout << "Computing homography..." << std::endl;
+
+	cv::Mat homography = cv::findHomography(points1, points2, ransac_mat, cv::RANSAC, 3.0);
+
+	std::cout << "RANSAC information: " << ransac_mat << std::endl;
+
+	float inlier = 0, outlier = 0;
+	for (int i = 0; i < ransac_mat.rows; i++) {
+
+		// We have an inlier:
+		if ((int)ransac_mat.at<uchar>(i, 0) == 1) inlier = inlier + 1;
+
+		// We have an outlier:
+		else outlier = outlier + 1;
+	}
+
+	std::cout << "Total matches checked: " << ransac_mat.rows << std::endl;
+	std::cout << "Inliers: " << inlier << std::endl;
+	std::cout << "Outliers: " << outlier << std::endl;
+	std::cout << "Procent inliers: " << (inlier / (ransac_mat.rows * 1.0)) * 100 << std::endl;
+	std::cout << "Procent outliers: " << (outlier / (ransac_mat.rows * 1.0)) * 100 << std::endl;
+
 
 	waitKey();
 
